@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Chess, three ways. Classic, Fog of War and Simultaneous chess on a carved wooden board, right in your browser.">
+<meta name="theme-color" content="#1a100a">
+<title>Chess, Three Ways</title>
+<style>/*FONTS*/</style>
+<style>/*STYLE*/</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<header id="hud" class="hidden">
+  <div class="hud-left">
+    <button id="btn-menu" class="icon" aria-label="Menu" title="Menu (Esc)">☰</button>
+    <div class="hud-title"><span id="hud-mode">Classic</span><span id="hud-sub" class="sub"></span></div>
+  </div>
+  <div id="hud-status" class="hud-status" aria-live="polite"></div>
+  <div class="hud-right">
+    <button id="btn-undo" class="icon" aria-label="Undo" title="Undo (U)">↶</button>
+    <button id="btn-view" class="icon" aria-label="Change view" title="Top-down or angled view (V)">◎</button>
+    <button id="btn-sound" class="icon" aria-label="Sound" title="Sound">♪</button>
+  </div>
+</header>
+
+<div id="captures" class="hidden">
+  <div class="cap cap-top" id="cap-top"></div>
+  <div class="cap cap-bottom" id="cap-bottom"></div>
+</div>
+
+<div id="sim-bar" class="hidden">
+  <div id="sim-text">Choose your move</div>
+  <button id="sim-lock" class="primary" disabled>Lock in</button>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<section id="title" class="screen">
+  <div class="title-card">
+    <div class="eyebrow">A carved-wood chess set</div>
+    <h1>Chess, <em>Three Ways</em></h1>
+    <p class="lede">Play classic chess, Fog of War or Simultaneous, against the computer or a friend.</p>
+    <div class="stack">
+      <button id="btn-play" class="primary big">Play</button>
+      <button id="btn-rules" class="ghost">How each mode works</button>
+      <button id="btn-settings" class="ghost">Settings</button>
+    </div>
+  </div>
+</section>
+
+<section id="newgame" class="screen hidden">
+  <div class="panel">
+    <h2>New game</h2>
+    <div class="field">
+      <div class="label">Mode</div>
+      <div class="choices modes" role="radiogroup" id="opt-mode">
+        <button data-v="classic" class="choice mode on"><strong>Classic</strong><span>Every rule of the real thing.</span></button>
+        <button data-v="fog" class="choice mode"><strong>Fog of War</strong><span>See only what your pieces see.</span></button>
+        <button data-v="simul" class="choice mode"><strong>Simultaneous</strong><span>Both sides move at once.</span></button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="label">Opponent</div>
+      <div class="choices" role="radiogroup" id="opt-opp">
+        <button data-v="ai" class="choice on">Computer</button>
+        <button data-v="pass" class="choice">Pass and play</button>
+      </div>
+    </div>
+    <div class="field" id="field-level">
+      <div class="label">Difficulty</div>
+      <div class="choices" role="radiogroup" id="opt-level">
+        <button data-v="easy" class="choice">Easy</button>
+        <button data-v="medium" class="choice on">Medium</button>
+        <button data-v="hard" class="choice">Hard</button>
+      </div>
+    </div>
+    <div class="field" id="field-color">
+      <div class="label">Play as</div>
+      <div class="choices" role="radiogroup" id="opt-color">
+        <button data-v="w" class="choice on">White</button>
+        <button data-v="b" class="choice">Black</button>
+        <button data-v="r" class="choice">Random</button>
+      </div>
+    </div>
+    <div class="row end">
+      <button class="ghost" data-close>Back</button>
+      <button id="btn-start" class="primary">Begin</button>
+    </div>
+  </div>
+</section>
+
+<section id="rules" class="screen hidden">
+  <div class="panel wide">
+    <h2>How each mode works</h2>
+    <div class="tabs" id="rules-tabs">
+      <button data-v="classic" class="tab on">Classic</button>
+      <button data-v="fog" class="tab">Fog of War</button>
+      <button data-v="simul" class="tab">Simultaneous</button>
+    </div>
+    <div class="rules-body" id="rules-classic">
+      <p>Standard chess with every rule: castling, en passant, promotion to any piece, check and checkmate. Games are drawn by stalemate, threefold repetition, the fifty-move rule or when neither side can possibly mate.</p>
+      <p>Tap a piece to see where it can go, then tap a square. You can undo at any time.</p>
+    </div>
+    <div class="rules-body hidden" id="rules-fog">
+      <p>You only see your own pieces and the squares they could move to or attack. Everything else lies under mist.</p>
+      <ul>
+        <li>There is no check. Your king may walk into danger, and nobody will warn you.</li>
+        <li>Capture the enemy king to win.</li>
+        <li>Castling only needs empty squares between king and rook.</li>
+        <li>En passant and promotion work as usual.</li>
+        <li>The computer plays fair. It only knows what its own pieces can see.</li>
+      </ul>
+    </div>
+    <div class="rules-body hidden" id="rules-simul">
+      <p>Both players secretly choose a move, then both moves happen at the same moment. There is no check. Capture the enemy king to win.</p>
+      <ul>
+        <li><strong>Nothing blocks mid-move.</strong> Moves are planned from the position at the start of the turn.</li>
+        <li><strong>Same square.</strong> If both pieces land on one square, the stronger one wins it. Equal pieces both fall.</li>
+        <li><strong>Swapping places.</strong> Two pieces moving into each other's squares meet halfway, and the stronger one continues.</li>
+        <li><strong>Missed captures.</strong> If the piece you aimed at moved away, your piece still lands but captures nothing.</li>
+        <li><strong>Strength.</strong> Pawn 1, knight 3, bishop 3, rook 5, queen 9, king strongest. A promoting pawn clashes as a pawn.</li>
+        <li><strong>Kings never trade.</strong> If both kings would meet, on one square or by swapping, both stay where they were and the turn passes.</li>
+        <li>No en passant. A side with no move passes.</li>
+        <li>If both kings fall on the same turn, it is a draw. So are fifty quiet turns, threefold repetition, bare kings or turn 200.</li>
+      </ul>
+    </div>
+    <div class="row end"><button class="primary" data-close>Close</button></div>
+  </div>
+</section>
+
+<section id="settings" class="screen hidden">
+  <div class="panel">
+    <h2>Settings</h2>
+    <div class="setting"><label for="set-sound">Sound</label><button id="set-sound" class="toggle" aria-pressed="false">Off</button></div>
+    <div class="setting"><label for="set-music">Music</label><input id="set-music" type="range" min="0" max="100"><button id="set-music-mute" class="toggle small" aria-pressed="false">On</button></div>
+    <div class="setting"><label for="set-sfx">Effects</label><input id="set-sfx" type="range" min="0" max="100"><button id="set-sfx-mute" class="toggle small" aria-pressed="false">On</button></div>
+    <div class="setting"><label for="set-hints">Move hints</label><button id="set-hints" class="toggle" aria-pressed="true">On</button></div>
+    <div class="setting"><label for="set-motion">Reduce animation</label><button id="set-motion" class="toggle" aria-pressed="false">Off</button></div>
+    <div class="setting"><label>Graphics</label>
+      <div class="choices compact" id="set-quality"><button data-v="auto" class="choice on">Auto</button><button data-v="high" class="choice">High</button><button data-v="low" class="choice">Low</button></div>
+    </div>
+    <p class="fine">Made with Three.js. All sound and music is generated live in your browser.</p>
+    <div class="row end"><button class="primary" data-close>Done</button></div>
+  </div>
+</section>
+
+<section id="ingame-menu" class="screen hidden">
+  <div class="panel narrow">
+    <h2>Paused</h2>
+    <div class="stack">
+      <button class="primary" data-close>Resume</button>
+      <button id="menu-rules" class="ghost">Rules</button>
+      <button id="menu-settings" class="ghost">Settings</button>
+      <button id="menu-new" class="ghost">New game</button>
+      <button id="menu-resign" class="ghost">Resign</button>
+      <button id="menu-title" class="ghost">Title screen</button>
+    </div>
+  </div>
+</section>
+
+<section id="promo" class="screen dim hidden">
+  <div class="panel narrow">
+    <h2>Promote to</h2>
+    <div class="promo-grid">
+      <button data-v="5" class="promo-btn"><span class="glyph">♛</span>Queen</button>
+      <button data-v="4" class="promo-btn"><span class="glyph">♜</span>Rook</button>
+      <button data-v="3" class="promo-btn"><span class="glyph">♝</span>Bishop</button>
+      <button data-v="2" class="promo-btn"><span class="glyph">♞</span>Knight</button>
+    </div>
+    <div class="row end"><button class="ghost" id="promo-cancel">Cancel</button></div>
+  </div>
+</section>
+
+<section id="cover" class="screen solid hidden">
+  <div class="cover-card">
+    <div class="eyebrow" id="cover-eyebrow">Pass and play</div>
+    <h2 id="cover-title">Hand the device to Black</h2>
+    <p id="cover-text">Keep the board hidden from the other player.</p>
+    <button id="cover-go" class="primary big">I'm ready</button>
+  </div>
+</section>
+
+<section id="gameover" class="screen dim hidden">
+  <div class="panel narrow center">
+    <div class="eyebrow" id="go-eyebrow">Game over</div>
+    <h2 id="go-title">White wins</h2>
+    <p id="go-reason">by checkmate</p>
+    <div class="stack">
+      <button id="go-rematch" class="primary">Play again</button>
+      <button id="go-change" class="ghost">Change mode</button>
+      <button id="go-view" class="ghost">Look at the board</button>
+    </div>
+  </div>
+</section>
+
+<script>/*APP*/</script>
+</body>
+</html>
